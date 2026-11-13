@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>YourDOST Next Step</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="next-step-api" content="https://yourdost-next-step.vercel.app/api/next-step">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -218,46 +217,45 @@ const SUGGEST = {
 };
 // Hosted on GitHub Pages: the AI call goes to a small server function that holds the API key.
 const API_URL = document.querySelector('meta[name="next-step-api"]')?.content || "api/next-step";
-const S = { uid: "arjun", mood: null, impact: 3, preference: "unsure", text: "", clarifications: [], rejected: [], last: null, mode: "rules", sample: null };
+const S = { uid: "arjun", mood: null, impact: 3, preference: "unsure", text: "", clarifications: [], rejected: [], last: null, mode: "rules" };
 const user = () => users[S.uid];
 const todayLabel = () => new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 
-// ---------- AI provider: in-viewer AI → server API → offline rules ----------
+// ---------- AI provider: server API (holds the key) → offline rules ----------
 async function detectMode() {
-  try { if (window.claude?.use) { S.sample = await window.claude.use("sample"); if (S.sample) return setMode("live"); } } catch (e) {}
   if (location.protocol.startsWith("http")) {
     try { const r = await fetch(API_URL, { method: "OPTIONS" }); if (r.ok) return setMode("api"); } catch (e) {}
   }
   setMode("rules");
 }
-function setMode(m) { S.mode = m; $("mode").textContent = { live: "AI guide · live", api: "AI guide · server", rules: "Offline mode" }[m]; $("mode").classList.toggle("live", m !== "rules"); }
+function setMode(m) { S.mode = m; $("mode").textContent = m === "api" ? "AI guide · live" : "Offline mode"; $("mode").classList.toggle("live", m === "api"); }
 async function decide(input) {
   const t0 = performance.now(); let result, via = S.mode, error = null;
-  try {
-    if (S.mode === "live") result = validate(await S.sample.json(buildPrompt(input), { modelTier: "default", cache: false }), input);
-    else if (S.mode === "api") { const r = await fetch(API_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }); if (!r.ok) throw new Error("api " + r.status); const j = await r.json(); if (j._fallback) { via = "server rules (" + j._fallback + ")"; } result = validate(j, input); }
-  } catch (e) { error = e?.code || e?.message || String(e); if (e?.code === "not_granted" || e?.code === "sampling_disabled") setMode("rules"); }
+  if (S.mode === "api") {
+    try {
+      const r = await fetch(API_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+      if (!r.ok) throw new Error("api " + r.status);
+      const j = await r.json();
+      if (j._fallback) via = "server rules (" + j._fallback + ")";
+      result = validate(j, input);
+    } catch (e) { error = e?.message || String(e); }
+  }
   if (!result) { result = rulesEngine(input); via = "rules" + (S.mode !== "rules" ? " (AI fallback)" : ""); }
   return { result, meta: { via, ms: Math.round(performance.now() - t0), error } };
 }
 
-// ---------- voice input: viewer dictation, else the browser's own speech API ----------
-async function setupMic() {
-  let d = null; try { d = window.claude?.use ? await window.claude.use("dictation") : null; } catch (e) {}
+// ---------- voice input: the browser's own speech recognition (Chrome, Edge, Safari) ----------
+function setupMic() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!d && !SR) return;
-  const mic = $("mic"); mic.hidden = false; let on = false, rec = null, baseText = "";
-  const stopUi = () => { on = false; mic.classList.remove("on"); };
-  if (d) {
-    d.onPartial(({ text }) => { $("text").value = (baseText + " " + text).trim(); });
-    d.onFinal(({ text }) => { baseText = (baseText + " " + text).trim(); $("text").value = baseText; });
-    d.onState(({ state }) => { if (state === "idle") stopUi(); });
-  }
+  if (!SR) return;
+  const mic = $("mic"); mic.hidden = false; let rec = null, baseText = "";
+  const stopUi = () => { rec = null; mic.classList.remove("on"); };
   mic.onclick = () => {
-    if (on) { d ? d.stop() : rec?.stop(); return stopUi(); }
-    baseText = $("text").value.trim(); on = true; mic.classList.add("on");
-    if (d) d.start().catch((e) => { stopUi(); if (e?.code === "not_granted") mic.hidden = true; });
-    else { rec = new SR(); rec.lang = "en-IN"; rec.interimResults = true; rec.onresult = (ev) => { $("text").value = (baseText + " " + [...ev.results].map((r) => r[0].transcript).join(" ")).trim(); }; rec.onend = stopUi; rec.onerror = stopUi; rec.start(); }
+    if (rec) { rec.stop(); return stopUi(); }
+    baseText = $("text").value.trim(); mic.classList.add("on");
+    rec = new SR(); rec.lang = "en-IN"; rec.interimResults = true;
+    rec.onresult = (ev) => { $("text").value = (baseText + " " + [...ev.results].map((r) => r[0].transcript).join(" ")).trim(); };
+    rec.onend = stopUi; rec.onerror = stopUi; rec.start();
   };
 }
 
