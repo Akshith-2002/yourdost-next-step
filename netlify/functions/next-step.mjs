@@ -1,8 +1,10 @@
-// Vercel serverless function: POST /api/next-step
-// Keeps the Anthropic API key on the server. Set ANTHROPIC_API_KEY in the Vercel project.
+// Netlify Function: POST /api/next-step
+// Keeps the Anthropic API key on the server (set ANTHROPIC_API_KEY in the Netlify site's environment variables).
 // The page itself is hosted on GitHub Pages and calls this endpoint cross-origin.
 import Anthropic from "@anthropic-ai/sdk";
-import { buildPrompt, validate, rulesEngine, safetyScreen, RESULT_SCHEMA } from "../shared.js";
+import { buildPrompt, validate, rulesEngine, safetyScreen, RESULT_SCHEMA } from "../../shared.js";
+
+export const config = { path: "/api/next-step" };
 
 const client = new Anthropic();
 const clip = (v, n) => String(v ?? "").slice(0, n);
@@ -35,23 +37,19 @@ function sanitizePersona(p) {
   };
 }
 
-export default async function handler(req, res) {
-  const origin = req.headers.origin || "";
+export default async (req, context) => {
+  const origin = req.headers.get("origin") || "";
   const okOrigin = ALLOWED.includes(origin);
-  if (okOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "content-type");
-  }
-  // OPTIONS doubles as the page's "is live AI available here?" probe.
-  if (req.method === "OPTIONS") return res.status(okOrigin && process.env.ANTHROPIC_API_KEY ? 200 : 503).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
-  if (!okOrigin) return res.status(403).json({ error: "origin not allowed" });
+  const cors = okOrigin ? { "Access-Control-Allow-Origin": origin, Vary: "Origin", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "content-type" } : {};
+  const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...cors, "content-type": "application/json" } });
 
-  const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+  // OPTIONS doubles as the page's "is live AI available here?" probe.
+  if (req.method === "OPTIONS") return new Response(null, { status: okOrigin && process.env.ANTHROPIC_API_KEY ? 200 : 503, headers: cors });
+  if (req.method !== "POST") return json({ error: "POST only" }, 405);
+  if (!okOrigin) return json({ error: "origin not allowed" }, 403);
+
   let body;
-  try { body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {}; } catch { return res.status(400).json({ error: "bad json" }); }
+  try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
   const input = {
     text: clip(body.text, 2000),
     impact: Math.min(5, Math.max(1, Number(body.impact) || 3)),
@@ -63,8 +61,8 @@ export default async function handler(req, res) {
   };
 
   // Safety never depends on the model.
-  if (safetyScreen([input.text, ...input.clarifications.map((c) => c.a)].join(" ")) === "crisis") return res.status(200).json({ ...rulesEngine(input), risk_level: "crisis" });
-  if (!allow(ip)) return res.status(200).json({ ...rulesEngine(input), _fallback: "rate_limited" });
+  if (safetyScreen([input.text, ...input.clarifications.map((c) => c.a)].join(" ")) === "crisis") return json({ ...rulesEngine(input), risk_level: "crisis" });
+  if (!allow(context?.ip || "unknown")) return json({ ...rulesEngine(input), _fallback: "rate_limited" });
 
   try {
     const response = await client.beta.messages.create({
@@ -77,10 +75,10 @@ export default async function handler(req, res) {
     });
     if (response.stop_reason === "refusal") throw new Error("refusal");
     const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-    return res.status(200).json(validate(JSON.parse(text), input));
+    return json(validate(JSON.parse(text), input));
   } catch (err) {
     // Any AI failure degrades to the rules engine instead of an error screen.
     console.error("next-step AI error:", err?.status ?? "", err?.message ?? err);
-    return res.status(200).json({ ...rulesEngine(input), _fallback: "ai_error" });
+    return json({ ...rulesEngine(input), _fallback: "ai_error" });
   }
-}
+};

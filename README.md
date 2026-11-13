@@ -10,7 +10,7 @@ Built for the YourDOST product assignment. All users, counsellors and content ar
 
 - `index.html`: the app (plain HTML/CSS/JS, no build step).
 - `shared.js`: catalogue, demo users, counsellor matching, self-check scoring, the safety screen, the prompt, output validation and an offline rules engine.
-- `api/next-step.js`: a small serverless function (Vercel) that holds the API key and calls the model with a strict JSON schema. The page on GitHub Pages calls it; the key never reaches the browser.
+- `netlify/functions/next-step.mjs`: a small Netlify Function that holds the API key and calls the model with a strict JSON schema. The page on GitHub Pages calls it; the key never reaches the browser.
 
 Safety is handled in code before any AI call. If the AI is unreachable, the rules engine takes over and the header shows "Offline mode".
 

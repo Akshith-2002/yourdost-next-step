@@ -1,8 +1,12 @@
-node_modules/
+
+# Local Netlify folder
+.DS_Store
+.netlify
+.netlify/
 .vercel/
-dist/
-decisions.html
 Task3_*.pdf
 WALKTHROUGH.md
 build_single.py
-.DS_Store
+decisions.html
+dist/
+node_modules/

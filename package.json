@@ -4,10 +4,9 @@
   "type": "module",
   "description": "YourDOST assignment prototype: AI-guided next step in a user's wellbeing journey",
   "scripts": {
-    "test": "node test.mjs",
-    "build:single": "python3 build_single.py"
+    "test": "node test.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "latest"
+    "@anthropic-ai/sdk": "^1.8.0"
   }
 }
