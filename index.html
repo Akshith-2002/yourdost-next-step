@@ -137,6 +137,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
         </button>
       </div>
+      <p class="tiny" id="mic-status" role="status" aria-live="polite" hidden></p>
       <div class="chips" id="suggest"></div>
       <div><div class="label" style="margin-bottom:6px">How much is it affecting your day?</div>
         <div class="seg" id="impact"><button class="chip" data-v="1">1</button><button class="chip" data-v="2">2</button><button class="chip" data-v="3" aria-pressed="true">3</button><button class="chip" data-v="4">4</button><button class="chip" data-v="5">5</button></div>
@@ -247,15 +248,34 @@ async function decide(input) {
 // ---------- voice input: the browser's own speech recognition (Chrome, Edge, Safari) ----------
 function setupMic() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
-  const mic = $("mic"); mic.hidden = false; let rec = null, baseText = "";
+  const mic = $("mic"), status = $("mic-status");
+  const say = (t) => { status.textContent = t; status.hidden = !t; };
+  const unsupported = "Voice input isn't available in this browser. It works in Chrome, Edge and Safari; you can also just type.";
+  mic.hidden = false;
+  // Brave and Firefox expose no working speech service, so explain instead of failing silently.
+  if (!SR || navigator.brave) { mic.onclick = () => say(unsupported); return; }
+  let rec = null, baseText = "", heard = false;
   const stopUi = () => { rec = null; mic.classList.remove("on"); };
+  const ERRORS = {
+    "not-allowed": "Allow microphone access for this site (the mic icon in the address bar), then tap the mic again.",
+    "service-not-allowed": unsupported,
+    network: unsupported,
+    "audio-capture": "No microphone found. Check your mic is connected, or type instead.",
+    "no-speech": "Didn't catch anything. Tap the mic and try again.",
+  };
   mic.onclick = () => {
-    if (rec) { rec.stop(); return stopUi(); }
-    baseText = $("text").value.trim(); mic.classList.add("on");
-    rec = new SR(); rec.lang = "en-IN"; rec.interimResults = true;
-    rec.onresult = (ev) => { $("text").value = (baseText + " " + [...ev.results].map((r) => r[0].transcript).join(" ")).trim(); };
-    rec.onend = stopUi; rec.onerror = stopUi; rec.start();
+    if (rec) { rec.stop(); return; }
+    baseText = $("text").value.trim(); heard = false; let started = false;
+    say("Starting the microphone…");
+    rec = new SR(); rec.lang = "en-IN"; rec.interimResults = true; rec.continuous = false;
+    rec.onstart = () => { started = true; mic.classList.add("on"); say("Listening… tap the mic again to stop."); };
+    const r = rec;
+    // Some browsers accept start() but never begin listening or report an error; don't leave the user guessing.
+    setTimeout(() => { if (!started && rec === r) { try { r.abort(); } catch (e) {} stopUi(); say("The microphone didn't start. Check mic permission for this site, or use Chrome, Edge or Safari. You can also just type."); } }, 4000);
+    rec.onresult = (ev) => { heard = true; $("text").value = (baseText + " " + [...ev.results].map((r) => r[0].transcript).join(" ")).trim(); };
+    rec.onerror = (ev) => { say(ERRORS[ev.error] || (ev.error === "aborted" ? "" : "Voice input stopped (" + ev.error + "). You can type instead.")); stopUi(); };
+    rec.onend = () => { if (heard) say(""); else if (status.textContent.startsWith("Listening")) say(ERRORS["no-speech"]); stopUi(); };
+    try { rec.start(); } catch (e) { say(unsupported); stopUi(); }
   };
 }
 
