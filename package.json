@@ -1,0 +1,13 @@
+{
+  "name": "yourdost-next-step",
+  "private": true,
+  "type": "module",
+  "description": "YourDOST assignment prototype: AI-guided next step in a user's wellbeing journey",
+  "scripts": {
+    "test": "node test.mjs",
+    "build:single": "python3 build_single.py"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest"
+  }
+}

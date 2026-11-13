@@ -1,0 +1,8 @@
+node_modules/
+.vercel/
+dist/
+decisions.html
+Task3_*.pdf
+WALKTHROUGH.md
+build_single.py
+.DS_Store

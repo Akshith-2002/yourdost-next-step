@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YourDOST Next Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="next-step-api" content="https://yourdost-next-step.vercel.app/api/next-step">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one phone-width column, like the app; journey on top, conversation below. */
+  :root {
+    --bg: #F5F4FA; --card: #FFFFFF; --ink: #221D3D; --muted: #67627F; --line: #E4E1EF;
+    --violet: #5A48D6; --violet-ink: #3F31A8; --violet-soft: #ECE9FC; --apricot: #F29B57; --apricot-soft: #FDEBDD;
+    --mint: #23906F; --mint-soft: #DDF3EB; --rose: #D2475B; --rose-soft: #FBE4E7; --bubble: #EFEDF8;
+    --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif; --body: "Figtree", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --shadow: 0 1px 2px rgba(34,29,61,.05), 0 10px 30px rgba(34,29,61,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #14121F; --card: #1D1A2C; --ink: #EEEBFA; --muted: #A39DBE; --line: #2F2A45; --violet: #8F80F5; --violet-ink: #B9AFFF; --violet-soft: #2A2450; --apricot: #F5AE73; --apricot-soft: #3A2A1E; --mint: #4CC59F; --mint-soft: #173A30; --rose: #F07686; --rose-soft: #3E1E25; --bubble: #262139; --shadow: none; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #14121F; --card: #1D1A2C; --ink: #EEEBFA; --muted: #A39DBE; --line: #2F2A45; --violet: #8F80F5; --violet-ink: #B9AFFF; --violet-soft: #2A2450; --apricot: #F5AE73; --apricot-soft: #3A2A1E; --mint: #4CC59F; --mint-soft: #173A30; --rose: #F07686; --rose-soft: #3E1E25; --bubble: #262139; --shadow: none; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+  .wrap { max-width: 480px; margin: 0 auto; padding-block: 14px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  .logo { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; flex: 1; }
+  .logo i { width: 26px; height: 26px; border-radius: 9px; background: linear-gradient(135deg, var(--violet), var(--apricot)); display: inline-block; }
+  select { font: inherit; font-size: 14px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
+  .pill { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+  .pill.live { color: var(--mint); border-color: var(--mint); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; box-shadow: var(--shadow); }
+  h1 { font-family: var(--display); font-size: 28px; line-height: 1.15; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+  h2 { font-family: var(--display); font-size: 19px; margin: 0; letter-spacing: -.01em; }
+  h3 { font-size: 15px; margin: 0; }
+  p { margin: 0; } .muted { color: var(--muted); font-size: 14px; } .tiny { font-size: 12px; color: var(--muted); }
+  .stack { display: flex; flex-direction: column; gap: 10px; } .row { display: flex; gap: 10px; align-items: center; } .row > .grow { flex: 1; min-width: 0; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  /* journey */
+  .journey { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; align-items: center; }
+  .spark { width: 120px; height: 40px; }
+  .timeline { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .timeline li { display: grid; grid-template-columns: 50px 1fr; gap: 8px; font-size: 14px; }
+  .timeline time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; padding-top: 1px; }
+  .timeline li.new { animation: pop .5s ease; } .timeline li.new span { color: var(--mint); font-weight: 600; }
+  @keyframes pop { from { background: var(--mint-soft); } to { background: transparent; } }
+  .counsellor-chip { display: inline-flex; gap: 6px; align-items: center; background: var(--violet-soft); color: var(--violet-ink); border-radius: 99px; padding: 3px 10px; font-size: 13px; font-weight: 600; }
+  /* check-in */
+  .moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .mood { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 14px; padding: 8px 0 6px; font: inherit; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .mood svg { width: 28px; height: 28px; }
+  .mood[aria-pressed="true"] { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-ink); font-weight: 700; }
+  .composer { position: relative; }
+  textarea { width: 100%; min-height: 96px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 52px 12px 12px; font: inherit; background: var(--bg); color: var(--ink); resize: vertical; }
+  .mic { position: absolute; right: 8px; bottom: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--violet-soft); color: var(--violet-ink); cursor: pointer; display: grid; place-items: center; }
+  .mic.on { background: var(--rose); color: #fff; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 8px var(--rose-soft); } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 99px; padding: 7px 13px; font: inherit; font-size: 14px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--violet-soft); border-color: var(--violet); color: var(--violet-ink); font-weight: 600; }
+  .chip.suggest { font-size: 13px; color: var(--muted); border-style: dashed; }
+  .seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; } .seg .chip { border-radius: 10px; text-align: center; padding: 8px 0; }
+  .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; width: 100%; border: 0; border-radius: 14px; padding: 14px; font: inherit; font-weight: 700; cursor: pointer; background: var(--violet); color: #fff; }
+  .btn:disabled { opacity: .5; cursor: default; } .btn.ghost { background: transparent; color: var(--violet-ink); border: 1px solid var(--line); }
+  .btn.rose { background: var(--rose); } .btn.small { width: auto; padding: 9px 14px; font-size: 14px; border-radius: 12px; }
+  button:focus-visible, textarea:focus, select:focus { outline: 2px solid var(--violet); outline-offset: 2px; }
+  /* conversation */
+  .thread { display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 88%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.45; }
+  .msg.me { align-self: flex-end; background: var(--violet); color: #fff; border-bottom-right-radius: 6px; }
+  .msg.ai { align-self: flex-start; background: var(--bubble); border-bottom-left-radius: 6px; }
+  .typing { display: inline-flex; gap: 4px; } .typing b { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; } .typing b:nth-child(2) { animation-delay: .2s; } .typing b:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--violet-ink); background: var(--violet-soft); border-radius: 6px; padding: 2px 8px; }
+  .next { border: 2px solid var(--violet); }
+  .why { background: var(--bg); border-radius: 12px; padding: 10px 12px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .plan { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+  .plan li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 8px 0; position: relative; }
+  .plan li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--violet); margin-top: 5px; background: var(--card); z-index: 1; }
+  .plan li:first-child::before { background: var(--violet); }
+  .plan li:not(:last-child)::after { content: ""; position: absolute; left: 7px; top: 22px; bottom: -6px; width: 2px; background: var(--line); }
+  .plan .when { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .alt { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .alt:first-child { border-top: 0; }
+  .help { text-align: center; font-size: 14px; color: var(--muted); }
+  .help button { background: none; border: 0; color: var(--violet-ink); font: inherit; font-weight: 700; cursor: pointer; padding: 0; }
+  details summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+  pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); border-radius: 10px; padding: 10px; font-size: 11.5px; max-height: 300px; overflow: auto; margin: 10px 0 0; }
+  .guards { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .guards span { font-size: 12px; background: var(--mint-soft); color: var(--mint); border-radius: 6px; padding: 2px 8px; font-weight: 600; }
+  /* check */
+  .bar { height: 6px; background: var(--line); border-radius: 6px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--violet); transition: width .3s; }
+  .opt { text-align: left; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 12px; padding: 12px 14px; font: inherit; cursor: pointer; width: 100%; }
+  .opt:hover { border-color: var(--violet); }
+  .gauge { height: 12px; border-radius: 12px; background: linear-gradient(90deg, var(--mint), var(--apricot), var(--rose)); position: relative; margin: 14px 0 4px; }
+  .gauge i { position: absolute; top: -5px; width: 4px; height: 22px; background: var(--ink); border-radius: 2px; }
+  /* match */
+  .counsellor { display: grid; grid-template-columns: 48px 1fr; gap: 12px; }
+  .avatar { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; font-family: var(--display); font-weight: 700; color: #fff; }
+  .reasons { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; } .reasons span { font-size: 12px; background: var(--bg); border-radius: 6px; padding: 2px 8px; }
+  .slot[aria-pressed="true"] { background: var(--violet); color: #fff; border-color: var(--violet); }
+  /* breathing */
+  .breath { width: 180px; height: 180px; margin: 10px auto; border-radius: 28px; border: 3px solid var(--violet); display: grid; place-items: center; font-family: var(--display); font-size: 20px; color: var(--violet-ink); background: var(--violet-soft); transition: transform 4s linear; }
+  .steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .crisis { border: 2px solid var(--rose); background: var(--rose-soft); }
+  .lines { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; } .lines li { padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 15px; } .lines b.num { user-select: all; }
+  .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 20; }
+  .note { font-size: 12px; color: var(--muted); text-align: center; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><i></i>YourDOST</div>
+    <select id="persona" aria-label="Demo user"><option value="arjun">Arjun (returning)</option><option value="meera">Meera (first visit)</option><option value="rahul">Rahul (in counselling)</option></select>
+  </header>
+  <div class="row"><span class="tiny grow">Demo with synthetic users · nothing is stored</span><span class="pill" id="mode">connecting…</span></div>
+
+  <!-- HOME -->
+  <section id="v-home" class="stack">
+    <div class="card stack">
+      <div class="journey">
+        <div><div class="label">Your journey</div><h2 id="greet"></h2></div>
+        <svg class="spark" id="spark" viewBox="0 0 120 40" aria-label="Mood over your last check-ins"></svg>
+      </div>
+      <div id="counsellor-line"></div>
+      <ul class="timeline" id="timeline"></ul>
+    </div>
+
+    <div class="card stack">
+      <h1 id="ask">How are you, really?</h1>
+      <div class="moods" id="moods" role="group" aria-label="Mood today"></div>
+      <div class="composer">
+        <textarea id="text" aria-label="What's on your mind" placeholder="Say it however it comes out. A few words is enough."></textarea>
+        <button class="mic" id="mic" title="Speak instead of typing" aria-label="Speak instead of typing" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+      </div>
+      <div class="chips" id="suggest"></div>
+      <div><div class="label" style="margin-bottom:6px">How much is it affecting your day?</div>
+        <div class="seg" id="impact"><button class="chip" data-v="1">1</button><button class="chip" data-v="2">2</button><button class="chip" data-v="3" aria-pressed="true">3</button><button class="chip" data-v="4">4</button><button class="chip" data-v="5">5</button></div>
+        <div class="row tiny" style="justify-content:space-between;margin-top:4px"><span>Barely</span><span>A lot</span></div>
+      </div>
+      <div><div class="label" style="margin-bottom:6px">Right now I'd rather…</div>
+        <div class="chips" id="preference"><button class="chip" data-v="talk">talk to someone</button><button class="chip" data-v="self">try something myself</button><button class="chip" data-v="unsure" aria-pressed="true">not sure yet</button></div>
+      </div>
+      <button class="btn" id="go">Help me figure out my next step</button>
+    </div>
+    <p class="help">Need a person now? <button id="h-talk">Chat with a counsellor</button></p>
+  </section>
+
+  <!-- CONVERSATION -->
+  <section id="v-convo" class="stack" hidden>
+    <div class="thread" id="thread"></div>
+    <div id="clarify" class="chips" hidden></div>
+    <div id="result" class="stack" hidden>
+      <div class="card next stack">
+        <div class="row"><span class="tag" id="r-type"></span><span class="tiny grow" id="r-meta" style="text-align:right"></span></div>
+        <h2 id="r-title"></h2>
+        <div class="why"><span><b>Why this:</b> <span id="r-why"></span></span><span><b>First 2 minutes:</b> <span id="r-first"></span></span></div>
+        <button class="btn" id="r-cta"></button>
+      </div>
+      <div class="card stack">
+        <div class="label">Your plan for this week</div>
+        <ul class="plan" id="plan"></ul>
+      </div>
+      <div class="card"><div class="label" style="margin-bottom:4px">Or, if that doesn't feel right</div><div id="alts"></div></div>
+      <div class="row"><button class="btn ghost" id="not-right">Suggest something else</button><button class="btn ghost" id="back-home">Back to home</button></div>
+      <p class="help">Prefer a person? <button id="r-talk">Chat with a counsellor now</button></p>
+      <details class="card"><summary>Under the hood (for reviewers)</summary><div class="guards" id="guards"></div><pre id="debug"></pre></details>
+    </div>
+  </section>
+
+  <!-- ACTION VIEWS -->
+  <section id="v-check" class="card stack" hidden></section>
+  <section id="v-match" class="stack" hidden></section>
+  <section id="v-prog" class="card stack" hidden></section>
+  <section id="v-breath" class="card stack" hidden></section>
+  <section id="v-read" class="card stack" hidden></section>
+  <section id="v-chat" class="card stack" hidden></section>
+
+  <!-- CRISIS -->
+  <section id="v-crisis" class="stack" hidden>
+    <div class="card crisis stack">
+      <span class="tag" style="background:var(--rose);color:#fff;align-self:flex-start">You're not alone</span>
+      <h1>Let's get you to a person, right now.</h1>
+      <p>What you wrote sounds really heavy. You deserve to talk to someone today, not to scroll through options.</p>
+      <ul class="lines">
+        <li><b>YourDOST on-call counsellor</b>: trained for moments like this, available now.</li>
+        <li>Tele-MANAS (free, 24×7): <b class="num">14416</b> or <b class="num">1-800-891-4416</b></li>
+        <li>KIRAN mental health helpline: <b class="num">1800-599-0019</b></li>
+        <li>In immediate danger: <b class="num">112</b></li>
+      </ul>
+      <button class="btn rose" id="crisis-connect">Connect me to a counsellor now</button>
+      <p class="tiny">This screen comes from a fixed safety check that runs before any AI, so it always appears for this kind of message.</p>
+    </div>
+    <button class="btn ghost" id="crisis-back">I typed that by mistake, go back</button>
+  </section>
+
+  <p class="note">Prototype for the YourDOST product assignment · synthetic users, counsellors and catalogue · not a medical device</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+import { CATALOG, PERSONAS, COUNSELLORS, CHECKS, matchCounsellors, scoreCheck, safetyScreen, buildPrompt, validate, rulesEngine } from "./shared.js";
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const users = structuredClone(PERSONAS);
+for (const u of Object.values(users)) u.counsellorName = COUNSELLORS.find((c) => c.id === u.counsellor)?.name || null;
+const SUGGEST = {
+  arjun: ["Quarter-end again. Sleeping 5 hours, snapping at home.", "Honestly a bit better this week"],
+  meera: ["idk, just not great lately", "My manager keeps moving deadlines and I can't switch off"],
+  rahul: ["Placement interviews next week and the worry is back", "Missed my session, feel bad about it"],
+};
+// Hosted on GitHub Pages: the AI call goes to a small server function that holds the API key.
+const API_URL = document.querySelector('meta[name="next-step-api"]')?.content || "api/next-step";
+const S = { uid: "arjun", mood: null, impact: 3, preference: "unsure", text: "", clarifications: [], rejected: [], last: null, mode: "rules", sample: null };
+const user = () => users[S.uid];
+const todayLabel = () => new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+// ---------- AI provider: in-viewer AI → server API → offline rules ----------
+async function detectMode() {
+  try { if (window.claude?.use) { S.sample = await window.claude.use("sample"); if (S.sample) return setMode("live"); } } catch (e) {}
+  if (location.protocol.startsWith("http")) {
+    try { const r = await fetch(API_URL, { method: "OPTIONS" }); if (r.ok) return setMode("api"); } catch (e) {}
+  }
+  setMode("rules");
+}
+function setMode(m) { S.mode = m; $("mode").textContent = { live: "AI guide · live", api: "AI guide · server", rules: "Offline mode" }[m]; $("mode").classList.toggle("live", m !== "rules"); }
+async function decide(input) {
+  const t0 = performance.now(); let result, via = S.mode, error = null;
+  try {
+    if (S.mode === "live") result = validate(await S.sample.json(buildPrompt(input), { modelTier: "default", cache: false }), input);
+    else if (S.mode === "api") { const r = await fetch(API_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }); if (!r.ok) throw new Error("api " + r.status); const j = await r.json(); if (j._fallback) { via = "server rules (" + j._fallback + ")"; } result = validate(j, input); }
+  } catch (e) { error = e?.code || e?.message || String(e); if (e?.code === "not_granted" || e?.code === "sampling_disabled") setMode("rules"); }
+  if (!result) { result = rulesEngine(input); via = "rules" + (S.mode !== "rules" ? " (AI fallback)" : ""); }
+  return { result, meta: { via, ms: Math.round(performance.now() - t0), error } };
+}
+
+// ---------- voice input: viewer dictation, else the browser's own speech API ----------
+async function setupMic() {
+  let d = null; try { d = window.claude?.use ? await window.claude.use("dictation") : null; } catch (e) {}
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!d && !SR) return;
+  const mic = $("mic"); mic.hidden = false; let on = false, rec = null, baseText = "";
+  const stopUi = () => { on = false; mic.classList.remove("on"); };
+  if (d) {
+    d.onPartial(({ text }) => { $("text").value = (baseText + " " + text).trim(); });
+    d.onFinal(({ text }) => { baseText = (baseText + " " + text).trim(); $("text").value = baseText; });
+    d.onState(({ state }) => { if (state === "idle") stopUi(); });
+  }
+  mic.onclick = () => {
+    if (on) { d ? d.stop() : rec?.stop(); return stopUi(); }
+    baseText = $("text").value.trim(); on = true; mic.classList.add("on");
+    if (d) d.start().catch((e) => { stopUi(); if (e?.code === "not_granted") mic.hidden = true; });
+    else { rec = new SR(); rec.lang = "en-IN"; rec.interimResults = true; rec.onresult = (ev) => { $("text").value = (baseText + " " + [...ev.results].map((r) => r[0].transcript).join(" ")).trim(); }; rec.onend = stopUi; rec.onerror = stopUi; rec.start(); }
+  };
+}
+
+// ---------- home ----------
+const MOODS = [["Very low", -8], ["Low", -4], ["Okay", 0], ["Good", 4], ["Great", 8]];
+function face(curve) { return `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="14" cy="14" r="12"/><circle cx="10" cy="11" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/><path d="M9 ${18 - curve / 4} Q14 ${18 + curve / 2} 19 ${18 - curve / 4}"/></svg>`; }
+$("moods").innerHTML = MOODS.map(([l, c], i) => `<button class="mood" data-v="${i + 1}" aria-pressed="false">${face(c)}<span>${l}</span></button>`).join("");
+$("moods").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; [...$("moods").children].forEach((x) => x.setAttribute("aria-pressed", x === b)); S.mood = Number(b.dataset.v); };
+function chooser(id, key) { $(id).onclick = (e) => { const b = e.target.closest("button"); if (!b) return; [...$(id).children].forEach((x) => x.setAttribute("aria-pressed", x === b)); S[key] = key === "impact" ? Number(b.dataset.v) : b.dataset.v; }; }
+chooser("impact", "impact"); chooser("preference", "preference");
+
+function renderHome(newIdx = -1) {
+  const u = user();
+  const h = new Date().getHours();
+  $("greet").textContent = `${h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"}, ${u.name}`;
+  $("ask").textContent = u.history.length ? "How are you, really?" : `Welcome, ${u.name}. How are you, really?`;
+  const pts = u.moods.length ? u.moods : [];
+  $("spark").innerHTML = pts.length > 1 ? (() => {
+    const xy = pts.map((m, i) => [6 + (i * 108) / (pts.length - 1), 36 - ((m - 1) / 4) * 30]);
+    const d = xy.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    const last = xy[xy.length - 1];
+    return `<path d="${d} L114 40 L6 40 Z" fill="var(--violet-soft)"/><path d="${d}" fill="none" stroke="var(--violet)" stroke-width="2"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="var(--violet)"/>`;
+  })() : `<text x="120" y="24" text-anchor="end" font-size="11" fill="var(--muted)">No check-ins yet</text>`;
+  $("counsellor-line").replaceChildren(...(u.counsellorName ? [el("span", "counsellor-chip", "Your counsellor: " + u.counsellorName)] : []));
+  const items = u.history.slice(-4);
+  $("timeline").replaceChildren(...(items.length ? items.map((it, i) => { const li = el("li"); if (u.history.indexOf(it) === newIdx) li.className = "new"; li.append(el("time", null, it.date), el("span", null, it.text)); return li; }) : [Object.assign(el("li"), { innerHTML: "<time></time><span class='muted'>This is your first check-in. Whatever you share stays between you and YourDOST, never your employer.</span>" })]));
+  $("suggest").replaceChildren(...SUGGEST[S.uid].map((s) => { const b = el("button", "chip suggest", s); b.onclick = () => { $("text").value = s; $("text").focus(); }; return b; }));
+}
+$("persona").onchange = () => { S.uid = $("persona").value; S.mood = null; [...$("moods").children].forEach((x) => x.setAttribute("aria-pressed", false)); $("text").value = ""; renderHome(); show("v-home"); };
+
+// ---------- navigation ----------
+const VIEWS = ["v-home", "v-convo", "v-check", "v-match", "v-prog", "v-breath", "v-read", "v-chat", "v-crisis"];
+function show(id) { VIEWS.forEach((v) => ($(v).hidden = v !== id)); window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" }); }
+let toastT; function toast(t) { $("toast").textContent = t; $("toast").hidden = false; clearTimeout(toastT); toastT = setTimeout(() => ($("toast").hidden = true), 2600); }
+function addHistory(text, id = null) { const u = user(); u.history.push({ date: todayLabel(), id, text }); return u.history.length - 1; }
+
+// ---------- conversation ----------
+function bubble(cls, text) { const b = el("div", "msg " + cls); if (text != null) b.textContent = text; $("thread").append(b); return b; }
+async function typeInto(node, text) { if (reduced) { node.textContent = text; return; } node.textContent = ""; for (const w of text.split(" ")) { node.textContent += (node.textContent ? " " : "") + w; await new Promise((r) => setTimeout(r, 28)); } }
+const input = () => ({ text: S.text, mood: S.mood, impact: S.impact, preference: S.preference, clarifications: S.clarifications, rejected: S.rejected, persona: user() });
+
+async function think(opening) {
+  $("result").hidden = true; $("clarify").hidden = true;
+  const inp = input();
+  if (safetyScreen([inp.text, ...inp.clarifications.map((c) => c.a)].join(" ")) === "crisis") return show("v-crisis");
+  const wait = bubble("ai"); wait.innerHTML = '<span class="typing"><b></b><b></b><b></b></span>';
+  const { result, meta } = await decide(inp);
+  S.last = { result, meta };
+  if (result.risk_level === "crisis") { wait.remove(); return show("v-crisis"); }
+  if (result.needs_clarification && !inp.clarifications.length) {
+    await typeInto(wait, result.clarifying_question || "Which of these feels closest?");
+    $("clarify").replaceChildren(...[...(result.clarifying_options || []), "Something else"].slice(0, 6).map((o) => { const b = el("button", "chip", o); b.onclick = () => { S.clarifications = [{ q: wait.textContent, a: o }]; bubble("me", o); think(); }; return b; }));
+    $("clarify").hidden = false; return;
+  }
+  await typeInto(wait, result.message || "Thanks for sharing that.");
+  renderResult(result, meta);
+}
+function renderResult(r, meta) {
+  const p = CATALOG[r.primary.id];
+  $("r-type").textContent = p.type; $("r-meta").textContent = p.meta; $("r-title").textContent = p.title;
+  $("r-why").textContent = r.primary.why; $("r-first").textContent = r.primary.first_step;
+  $("r-cta").textContent = p.cta; $("r-cta").onclick = () => act(r.primary.id, r);
+  $("plan").replaceChildren(...r.plan.map((x) => { const li = el("li"), d = el("div"); d.append(el("div", "when", x.when), el("div", null, x.label)); li.append(d); return li; }));
+  $("alts").replaceChildren(...r.alternatives.map((a) => { const c = CATALOG[a.id], row = el("div", "alt"), d = el("div", "grow"); d.style.flex = "1"; d.append(el("span", "tag", c.type), el("h3", null, c.title), el("p", "muted", a.why)); const b = el("button", "btn ghost small", c.cta); b.onclick = () => act(a.id, r); row.append(d, b); return row; }));
+  $("guards").replaceChildren(...["Safety check ran before AI", "Only real catalogue items", r.alternatives.length ? "No repeats of rejected steps" : null, "Plan starts with the primary step"].filter(Boolean).map((g) => el("span", null, "✓ " + g)));
+  $("debug").textContent = JSON.stringify({ mode: meta.via, latency_ms: meta.ms, error: meta.error, user_context_sent: { name: user().name, history_items: user().history.length, has_counsellor: !!user().counsellor }, output: r }, null, 2);
+  $("result").hidden = false;
+}
+$("go").onclick = () => {
+  S.text = $("text").value.trim();
+  if (!S.text && !S.mood) { $("text").focus(); $("text").placeholder = "Even one word helps: \"tired\", \"stressed\", \"okay actually\"."; return; }
+  if (S.mood) { user().moods.push(S.mood); }
+  S.clarifications = []; S.rejected = [];
+  $("thread").replaceChildren(); bubble("me", S.text || `Feeling ${MOODS[S.mood - 1][0].toLowerCase()} today.`);
+  show("v-convo"); think();
+};
+$("not-right").onclick = () => { if (S.last) S.rejected = [...new Set([...S.rejected, S.last.result.primary.id])]; bubble("me", "That doesn't feel right for me."); think(); };
+$("back-home").onclick = () => { renderHome(); show("v-home"); };
+
+// ---------- actions ----------
+function act(id, r) {
+  if (id === "counsel_session" || id === "followup_session") return openMatch(id, r);
+  if (id === "instant_chat") return openChat();
+  if (CHECKS[id]) return openCheck(id);
+  if (id === "res_breathing") return openBreath();
+  if (id.startsWith("prog_")) return openProg(id);
+  return openRead(id);
+}
+function finish(text, id, msg) { const idx = addHistory(text, id); toast(msg || "Added to your journey"); renderHome(idx); show("v-home"); }
+function backBtn(label = "Back") { const b = el("button", "btn ghost small", label); b.onclick = () => show("v-convo"); return b; }
+
+function openCheck(id) {
+  const c = CHECKS[id], answers = []; const v = $("v-check");
+  const step = (i) => {
+    v.replaceChildren();
+    if (i === c.items.length) return result();
+    const bar = el("div", "bar"), fill = el("i"); fill.style.width = (i / c.items.length) * 100 + "%"; bar.append(fill);
+    v.append(el("span", "tag", CATALOG[id].title), bar, el("p", "muted", c.intro), el("h2", null, c.items[i][0]));
+    c.options.forEach((o, k) => { const b = el("button", "opt", o); b.onclick = () => { answers[i] = k; step(i + 1); }; v.append(b); });
+    v.append(el("p", "tiny", `Question ${i + 1} of ${c.items.length}`));
+  };
+  const result = () => {
+    const { score, max, band } = scoreCheck(id, answers);
+    const g = el("div", "gauge"), mark = el("i"); mark.style.left = `calc(${(score / max) * 100}% - 2px)`; g.append(mark);
+    const go = el("button", "btn", "See my next step with this"), back = backBtn("Not now");
+    go.onclick = () => { const idx = addHistory(`${CATALOG[id].title}: ${score}/${max} (${band})`, id); renderHome(idx); S.text = `I just took the ${CATALOG[id].title}. My score was ${score}/${max}, ${band}. ${S.text}`.trim(); S.clarifications = []; S.rejected = [id]; bubble("me", `Done the check: ${score}/${max} (${band}).`); show("v-convo"); think(); };
+    v.append(el("span", "tag", "Your result"), el("h1", null, `${score} / ${max}: ${band}`), g, el("div", "row tiny", "Lower is better. This is a screening check, not a diagnosis."), el("p", null, band.match(/high|severe|significant|moderate/) ? "That's a lot to be carrying. Talking it through with someone usually helps more than pushing on alone." : "That's useful to know. Small, regular steps tend to work well at this level."), go, back);
+  };
+  step(0); show("v-check");
+}
+
+function openMatch(id, r) {
+  const v = $("v-match"); v.replaceChildren();
+  const u = user();
+  let list = id === "followup_session" && u.counsellor ? [{ ...COUNSELLORS.find((c) => c.id === u.counsellor), reasons: ["Your current counsellor", "Knows your story", "Same approach you've been practising"] }] : matchCounsellors(r?.themes || [], u, S.preference);
+  const head = el("div", "card stack"); head.append(el("span", "tag", id === "followup_session" ? "Follow-up" : "Matched for you"), el("h1", null, id === "followup_session" ? `Book your next session with ${list[0].name}` : "Three counsellors who fit what you shared"), el("p", "muted", id === "followup_session" ? "Continuity matters. Pick a slot that works around your week." : "Matched on what you're dealing with, your language, and how soon they're free. You can always switch later, no questions asked."));
+  v.append(head);
+  const colors = ["#5A48D6", "#23906F", "#D2475B", "#C47A2C", "#3F7CC4", "#8A4FB8"];
+  let chosen = null; const confirm = el("button", "btn", "Choose a time slot"); confirm.disabled = true;
+  list.forEach((c, i) => {
+    const card = el("div", "card counsellor"), av = el("div", "avatar", c.name.replace("Dr. ", "")[0]); av.style.background = colors[COUNSELLORS.findIndex((x) => x.id === c.id) % colors.length];
+    const body = el("div"); body.append(el("h3", null, c.name), el("p", "tiny", `${c.years} yrs · ${c.langs.join(", ")} · ${c.modes.join(" / ")}`));
+    const rs = el("div", "reasons"); c.reasons.forEach((x) => rs.append(el("span", null, x))); body.append(rs);
+    const slots = el("div", "chips"); c.slots.forEach((s) => { const b = el("button", "chip slot", s); b.onclick = () => { v.querySelectorAll(".slot").forEach((x) => x.setAttribute("aria-pressed", false)); b.setAttribute("aria-pressed", true); chosen = { c, s }; confirm.disabled = false; confirm.textContent = `Book ${s} with ${c.name}`; }; slots.append(b); });
+    body.append(slots); card.append(av, body); v.append(card);
+  });
+  confirm.onclick = () => { const u2 = user(); u2.counsellor = chosen.c.id; u2.counsellorName = chosen.c.name; finish(`Booked ${chosen.s} with ${chosen.c.name}`, id, "Session booked (demo)"); };
+  v.append(confirm, backBtn()); show("v-match");
+}
+
+function openProg(id) {
+  const v = $("v-prog"); const c = CATALOG[id]; const resumed = user().history.some((h) => h.id === id);
+  const steps = { prog_stress: ["3-minute body scan (audio)", "Write the one task weighing on you most", "Pick one 15-minute slice of it for tomorrow morning"], prog_sleep: ["Choose a fixed wake-up time for 7 days", "Set a 'wind-down' reminder 45 min before bed", "Log tonight's sleep in the diary"], prog_anxiety: ["Name tonight's top worry", "Rate how likely it really is (0–100%)", "Book a 15-minute 'worry time' for tomorrow"] }[id] || [c.first, "Notice how you feel afterwards (1–5)", "Set a reminder for tomorrow"];
+  v.replaceChildren(el("span", "tag", c.type), el("h1", null, resumed ? `${c.title}: welcome back` : c.title), el("p", "muted", resumed ? "No need to start over. We picked up from day 4." : c.meta));
+  const ol = el("ol", "steps"); steps.forEach((s) => ol.append(el("li", null, s))); v.append(ol);
+  const b = el("button", "btn", "I've done today's session"); b.onclick = () => finish(resumed ? `${c.title}: day 4 done` : `${c.title}: day 1 done`, id, "Nice. That's on your journey."); v.append(b, backBtn()); show("v-prog");
+}
+
+function openBreath() {
+  const v = $("v-breath"); const box = el("div", "breath", "Ready"); let n = 0, timer;
+  const phases = ["Breathe in", "Hold", "Breathe out", "Hold"];
+  const start = el("button", "btn", "Start (5 rounds)");
+  start.onclick = () => { start.disabled = true; const tick = () => { const ph = phases[n % 4]; box.textContent = ph; box.style.transform = ph === "Breathe in" ? "scale(1.18)" : ph === "Breathe out" ? "scale(0.88)" : box.style.transform; n++; if (n >= 20) { clearInterval(timer); box.textContent = "Done"; done.disabled = false; } }; tick(); timer = setInterval(tick, reduced ? 1500 : 4000); };
+  const done = el("button", "btn ghost", "Finish"); done.disabled = true; done.onclick = () => finish("5-minute box breathing", "res_breathing");
+  v.replaceChildren(el("span", "tag", "Quick tool"), el("h1", null, "Box breathing"), el("p", "muted", "Follow the square: in for 4, hold 4, out 4, hold 4."), box, start, done, backBtn()); show("v-breath");
+}
+
+function openRead(id) {
+  const c = CATALOG[id]; const v = $("v-read");
+  const b = el("button", "btn", "Mark as read"); b.onclick = () => finish(`Read: ${c.title}`, id);
+  v.replaceChildren(el("span", "tag", c.type), el("h1", null, c.title), el("p", "muted", c.meta), el("p", null, c.first + " The full article lives in the YourDOST library; this demo shows the entry point only."), b, backBtn()); show("v-read");
+}
+
+function openChat() {
+  const v = $("v-chat"); const status = el("p", "muted", "Finding an available counsellor…");
+  const t = el("div", "thread");
+  v.replaceChildren(el("span", "tag", "Talk now"), el("h1", null, "You'll be talking to someone in a moment"), status, t, backBtn());
+  show("v-chat");
+  setTimeout(() => { status.textContent = "Connected: Rohit Menon (counsellor, demo)"; const m = el("div", "msg ai", `Hi ${user().name}, I'm Rohit. I'm here with you. Take your time: what's going on right now?`); t.append(m); addHistory("Instant chat with a counsellor", "instant_chat"); renderHome(); }, reduced ? 200 : 1600);
+}
+$("h-talk").onclick = openChat; $("r-talk").onclick = openChat; $("crisis-connect").onclick = openChat;
+$("crisis-back").onclick = () => show("v-home");
+
+renderHome(); detectMode(); setupMic();
+</script>
+</body>
+</html>
